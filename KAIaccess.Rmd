@@ -1,0 +1,48 @@
+---
+title: "Pembersihan Data"
+author: "Ananda Fuad Nur Fauzi"
+date: "18/1/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include = FALSE}
+library(tm)
+library(vroom)
+library(here)
+```
+
+```{r load daataset}
+d = vroom(here("KAIaccess1.csv"))
+ulasan = d$Review
+ulasan1 = Corpus(VectorSource(ulasan))
+URL = function(X) gsub("http[^[:space:]]*", "", X)
+clean = tm_map(ulasan1, URL)
+LN = function(y) gsub("\n", "", y)
+clean = tm_map(clean, LN)
+koma = function(y) gsub(",", "", y)
+clean = tm_map(clean, koma)
+titikdua = function(y) gsub(":", "", y)
+clean = tm_map(clean, titikdua)
+titikkoma = function(y) gsub(";", "", y)
+clean = tm_map(clean, titikkoma)
+titik = function(y) gsub("p...", "", y)
+clean = tm_map(clean, titik)
+amp = function(y) gsub("&amp;", "", y)
+clean = tm_map(clean, amp)
+UN = function(y) gsub("@\\w+", "", y)
+clean = tm_map(clean, UN)
+all = function(y) gsub("[^[:alpha:][:space:]]*", "", y)
+clean = tm_map(clean, all)
+clean = tm_map(clean, removePunctuation)
+clean = tm_map(clean, tolower)
+
+dataframe = data.frame(text=unlist(sapply(clean, `[`)), stringsAsFactors = F)
+View(dataframe)
+write.csv(dataframe,file = 'databersih.csv')
+
+
+```

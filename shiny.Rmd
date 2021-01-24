@@ -1,0 +1,160 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+n---
+title: "Shiny for data visualisation"
+output: html_document
+runtime: shiny
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, 
+  warning = FALSE,
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r bagi data}
+library(e1071)
+library(caret)
+library(syuzhet)
+
+KAIaccess = read.csv("databersih.csv", stringsAsFactors = F)
+ulasan = as.character(KAIaccess$text)
+s = get_nrc_sentiment(ulasan)
+
+review_combine = cbind(KAIaccess$text,s)
+par(mar = rep(3,4))
+a = barplot(colSums(s), col = rainbow(10), ylab = 'count', main = 'Sentiment Analisis')
+brplt = a
+```
+
+
+Pada bagian modul ini, kita akan membuat aplikasi web sederhana untuk menampilkan grafik review pengguna kai access selama periode tertentu. Kita akan mencoba membuat dan memodifikasi aplikasi web dengan menggunakan dokumen R Markdown sebagai *sandbox*. Kita akan memerlukan empat *chunk* untuk menuliskankan kode. Masing-masing *chunk* tersebut akan kita beri nama sebagai "global", "ui", "server", dan "run-app". Perhatikanlah contoh cara untuk mengatur hal tersebut pada *chunk* pertama!
+
+**`global`**
+
+Pada *chunk* pertama, kita akan mengaktifkan paket-paket yang diperlukan sehingga aplikasi web dapat berjalan dengan baik. Paket yang kita perlukan adalah `shiny`, `here`, `vroom`, `dplyr`, `ggplot2`, `syuzhet` dan `plotly`. Selain itu, kita juga diminta untuk mengimpor berkas "databersih.csv" 
+
+
+```{r global}
+library(shiny)
+library(here)
+library(vroom)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(syuzhet)
+
+kaiacces <- vroom(here("databersih.csv"))
+kaiaccesss <- kaiacces$text
+```
+
+**`ui`**
+
+
+```{r ui}
+ui <- fluidPage(
+  title = "DATA ",
+  headerPanel("Data kai access"),
+ 
+    mainPanel(
+      tabsetPanel(type = "tabs",
+                  tabPanel("scatterplot", plotOutput("scatterplot")),
+                  tabPanel("Data",DT::dataTableOutput('tbl'))
+                  )
+))
+```
+
+**`server`**
+
+Selanjutnya kita perlu menuliskan kode logika aplikasi yang dieksekusi oleh aplikasi web untuk melakukan pemrosesan data. *Chunk* ketiga ini merupakan tempat Anda untuk mengembangkan *back-end* aplikasi web. Disini kita harus membuat obyek R berupa fungsi dengan tiga argumen, yaitu: `input`, `output`, dan `session`. Kemudian di dalam badan fungsi tersebut kita akan menempatkan seluruh kode pemrosesan data. Kita akan menggunakan `input` yang telah dituliskan pada bagian `ui` sebagai "bahan baku" dan kemudian menampilkan hasilnya pada `output`. Konten `input` dapat kita akses di `input$inputId`, sedangkan komponen `output` dapat kita simpan ke `output$outputId`. Pastikan semua Id tersebut sama dengan apa yang terdapat di `ui`! Lengkapilah *chunk* berikut:
+
+```{r server}
+server <- function(input, output, session) {
+  #output Data
+  output$tbl = DT::renderDataTable({
+    DT::datatable(kaiacces, options = list(lengthChange = FALSE))
+  })
+  output$scatterplot <- renderPlot({ kaidata<-read.csv("databersih.csv",stringsAsFactors = FALSE)
+  review <-as.character(kaidata$text)
+  get_nrc_sentiment('happy')
+  get_nrc_sentiment('excitement')
+  s<-get_nrc_sentiment(review)
+  
+  review_combine<-cbind(kaidata,s)
+  par(map=rep(3,4))
+  barplot(colSums(s),col =rainbow(10),ylab = 'count',main = 'sentiment analisis' )
+  }, height = 400)
+  output$wordcloud <- renderPlot({
+    set.seed(20)
+    df<-df[sample(nrow(df)),]
+    df<-df[sample(nrow(df)),]
+    glimpse(df)
+    
+    df$index=as.factor(df$index)
+    Corpus<-Corpus(VektorSource(df$text))
+    corpus
+    inspect(Corpus[1:10])
+    #fungsinya untuk membersihkan data yang tidak di utuhkan
+    Corpus.clean<-corpus%>%
+      tm_map(content_transformer(tolower))%>%
+      tm_map(removePunctuation)%>%
+      tm_map(removeNumbers)%>%
+      tm_map(removeWords,stopwords(kind = "en"))%>%
+      tm_map(stripWhitespace)
+    dtm<-DocumentTermMatrix(Corpus.clean)
+    
+    inspect(dtm[1:10,1:20])
+    
+    df.train <-df[1:50,]
+    df.test<-df(51:100,)
+    
+    dtm.train <-dtm[1:50,]
+    dtm.test<-dtm(51:100,)
+    
+    Corpus.clean.train<-Corpus.clean[1:50]
+    Corpus.clean.test<-Corpus.clean[51:100]
+    
+    dim(dtm.train)
+    fivefreq<-findFreqTerms(dtm.train,5)
+    length(fivefreq)
+    
+    dtm.train.nb<-DocumentTermMatrix(Corpus.clean.train,control = list(dictionary=fivefreq))
+    
+    #dum(dtm,train,nb)
+    
+    dtm.test.nb<-DocumentTermMatrix(Corpus.clean.train,control = list(dictionary=fivefreq))
+    
+    dim(dtm,test,nb)
+    
+    convert_count <- function(x){
+      y<-ifelse(x>0,1,0)
+      y<-factor(y,levels = c(0,1),labels = c("no","yes"))
+    y
+    }
+    trainNB<-apply(dtm.train.nb,2,convert_count)
+    testNB<- apply(dtm.test.nb,1,convert_count)
+    
+    classifier<-naiveBayes(trainNB,df.train$index,laplace = 1)
+    library(wordcloud)
+    wordcloud(Corpus.clean,min.freq = 4,max.words=100,random.order=f,colors=brewer.pal(8,"Dark2"))
+  })
+}
+```
+
+**`run-app`**
+
+Akhirnya Anda selesai menuliskan komponen `global`, `ui`, dan `server`. Sekarang saatnya Anda mencoba aplikasi web yang telah Anda kembangkan! Jalankanlah baris kode pada *chunk* berikut:
+
+```{r run-app}
+shinyApp(ui = ui, server = server, options = list(height = "500px"))
+```
+
+

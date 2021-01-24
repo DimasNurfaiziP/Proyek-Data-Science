@@ -1,0 +1,29 @@
+---
+title: "NaiveBayes"
+author: "Ananda Fuad Nur Fauzi"
+date: "19/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r bagi data}
+library(e1071)
+library(caret)
+library(syuzhet)
+
+KAIaccess = read.csv("databersih.csv", stringsAsFactors = F)
+ulasan = as.character(KAIaccess$text)
+s = get_nrc_sentiment(ulasan)
+
+review_combine = cbind(KAIaccess$text,s)
+par(mar = rep(3,4))
+a = barplot(colSums(s), col = rainbow(10), ylab = 'count', main = 'Sentiment Analisis')
+brplt = a
+```
+
+```{r bagi data2}
+
+```
